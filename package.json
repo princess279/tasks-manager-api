@@ -1,0 +1,31 @@
+{
+  "name": "task-manager-api",
+  "version": "1.0.0",
+  "description": "A RESTful API for managing tasks and user",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [],
+  "author": "Precious Ogabu",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "date-fns": "^3.6.0",
+    "date-fns-tz": "^3.0.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-validator": "^7.3.0",
+    "jsonwebtoken": "^9.0.2",
+    "luxon": "^3.7.2",
+    "mongoose": "^8.19.2",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^6.9.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

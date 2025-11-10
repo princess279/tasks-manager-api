@@ -1,0 +1,395 @@
+{
+	"info": {
+		"_postman_id": "7edca2b5-dae5-4ace-bf4f-64d8cf5b747b",
+		"name": "Task Manager API",
+		"description": "Full Postman collection for Task Manager API including auth, tasks, password reset, and reminders.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "49566014",
+		"_collection_link": "https://ogabuprecious5-8155267.postman.co/workspace/princess's-Workspace~524642bf-946b-427a-86eb-ad3965d38b09/collection/49566014-7edca2b5-dae5-4ace-bf4f-64d8cf5b747b?action=share&source=collection_link&creator=49566014"
+	},
+	"item": [
+		{
+			"name": "Register User",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"John Doe\",\n    \"email\": \"john@example.com\",\n    \"password\": \"password123\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:4000/api/auth/register",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4000",
+					"path": [
+						"api",
+						"auth",
+						"register"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login User",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"ogabuprecious19@gmail.com\",\n    \"password\": \"newpassword123\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:4000/api/auth/login?Authorization=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MGZlYTFmNTRiM2NjYzc2ZmI5ZTNhOCIsImlhdCI6MTc2Mjc1MjAwMSwiZXhwIjoxNzYyODM4NDAxfQ.VTgpf3Z6Lm0da7UrqF6773l9h5IZObfKRxCLlkKPq2M&content-Type=application/json",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4000",
+					"path": [
+						"api",
+						"auth",
+						"login"
+					],
+					"query": [
+						{
+							"key": "Authorization",
+							"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MGZlYTFmNTRiM2NjYzc2ZmI5ZTNhOCIsImlhdCI6MTc2Mjc1MjAwMSwiZXhwIjoxNzYyODM4NDAxfQ.VTgpf3Z6Lm0da7UrqF6773l9h5IZObfKRxCLlkKPq2M"
+						},
+						{
+							"key": "content-Type",
+							"value": "application/json"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Forgot Password",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"john@example.com\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:4000/api/auth/forgot-password",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4000",
+					"path": [
+						"api",
+						"auth",
+						"forgot-password"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Reset Password",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"password\": \"newpassword123\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:4000/api/auth/reset-password/{{token}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4000",
+					"path": [
+						"api",
+						"auth",
+						"reset-password",
+						"{{token}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Task",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let jsonData = pm.response.json();\r",
+							"pm.environment.set(\"taskId\", jsonData._id || jsonData.id);"
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MGZlYTFmNTRiM2NjYzc2ZmI5ZTNhOCIsImlhdCI6MTc2Mjc2NTg0MCwiZXhwIjoxNzYyODUyMjQwfQ.xaElMYHpYifcAfShnqrOICvtErf8Fgj7GwR9RAsLE-E",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"title\": \"New task\",\n    \"description\": \"This is a new task\",\n    \"dueDate\": \"2025-11-13T00:00:00.000Z\",\n    \"status\":\"pending\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:4000/api/tasks?Authorization=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MGZlYTFmNTRiM2NjYzc2ZmI5ZTNhOCIsImlhdCI6MTc2Mjc2NTg0MCwiZXhwIjoxNzYyODUyMjQwfQ.xaElMYHpYifcAfShnqrOICvtErf8Fgj7GwR9RAsLE-E&Content-Type=application/json",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4000",
+					"path": [
+						"api",
+						"tasks"
+					],
+					"query": [
+						{
+							"key": "Authorization",
+							"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MGZlYTFmNTRiM2NjYzc2ZmI5ZTNhOCIsImlhdCI6MTc2Mjc2NTg0MCwiZXhwIjoxNzYyODUyMjQwfQ.xaElMYHpYifcAfShnqrOICvtErf8Fgj7GwR9RAsLE-E"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get All Tasks",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MDY1NzhiZjFkYjMyZjk0ODQ1ZDIzNSIsImlhdCI6MTc2MjAyMzU1MCwiZXhwIjoxNzYyMTA5OTUwfQ.yeauc7SkX-u6OsU9t6t_kKmUzgnO4LwV8xrHNBxt1So",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n \"description\": \"Complete the API routes\",\r\n \"status\":\"completed\",\r\n \"dueDate\":\"2025-11-12\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:4000/api/task/6911769f0d73cb3def21d7c4?Authorization=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MDY1NzhiZjFkYjMyZjk0ODQ1ZDIzNSIsImlhdCI6MTc2MjAyMzU1MCwiZXhwIjoxNzYyMTA5OTUwfQ.yeauc7SkX-u6OsU9t6t_kKmUzgnO4LwV8xrHNBxt1So&Content-Type=application/json",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4000",
+					"path": [
+						"api",
+						"task",
+						"6911769f0d73cb3def21d7c4"
+					],
+					"query": [
+						{
+							"key": "Authorization",
+							"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MDY1NzhiZjFkYjMyZjk0ODQ1ZDIzNSIsImlhdCI6MTc2MjAyMzU1MCwiZXhwIjoxNzYyMTA5OTUwfQ.yeauc7SkX-u6OsU9t6t_kKmUzgnO4LwV8xrHNBxt1So"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MGZlYTFmNTRiM2NjYzc2ZmI5ZTNhOCIsImlhdCI6MTc2Mjc1MjAwMSwiZXhwIjoxNzYyODM4NDAxfQ.VTgpf3Z6Lm0da7UrqF6773l9h5IZObfKRxCLlkKPq2M",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"title\": \"Updated Task Title\",\n  \"description\": \"Refined task description\",\n  \"status\": \"in progress\",\n  \"dueDate\": \"2025-11-12T14:00:00Z\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:4000/api/tasks/691143609165dfae277eb966?Authorization=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MGZlYTFmNTRiM2NjYzc2ZmI5ZTNhOCIsImlhdCI6MTc2Mjc1MjAwMSwiZXhwIjoxNzYyODM4NDAxfQ.VTgpf3Z6Lm0da7UrqF6773l9h5IZObfKRxCLlkKPq2M&Content-Type=application/json",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4000",
+					"path": [
+						"api",
+						"tasks",
+						"691143609165dfae277eb966"
+					],
+					"query": [
+						{
+							"key": "Authorization",
+							"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MGZlYTFmNTRiM2NjYzc2ZmI5ZTNhOCIsImlhdCI6MTc2Mjc1MjAwMSwiZXhwIjoxNzYyODM4NDAxfQ.VTgpf3Z6Lm0da7UrqF6773l9h5IZObfKRxCLlkKPq2M"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Task",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:4000/api/tasks/{{taskId}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4000",
+					"path": [
+						"api",
+						"tasks",
+						"{{taskId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Mark Task Complete",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MGZlYTFmNTRiM2NjYzc2ZmI5ZTNhOCIsImlhdCI6MTc2Mjc2NTg0MCwiZXhwIjoxNzYyODUyMjQwfQ.xaElMYHpYifcAfShnqrOICvtErf8Fgj7GwR9RAsLE-E",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:4000/api/tasks/6911ac6359bbebdbe0db9756/complete?Authorization=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MGZlYTFmNTRiM2NjYzc2ZmI5ZTNhOCIsImlhdCI6MTc2Mjc2NTg0MCwiZXhwIjoxNzYyODUyMjQwfQ.xaElMYHpYifcAfShnqrOICvtErf8Fgj7GwR9RAsLE-E&Content-Type=application/json",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4000",
+					"path": [
+						"api",
+						"tasks",
+						"6911ac6359bbebdbe0db9756",
+						"complete"
+					],
+					"query": [
+						{
+							"key": "Authorization",
+							"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MGZlYTFmNTRiM2NjYzc2ZmI5ZTNhOCIsImlhdCI6MTc2Mjc2NTg0MCwiZXhwIjoxNzYyODUyMjQwfQ.xaElMYHpYifcAfShnqrOICvtErf8Fgj7GwR9RAsLE-E"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
