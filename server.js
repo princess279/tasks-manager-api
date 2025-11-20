@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors'; 
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
@@ -7,12 +8,18 @@ import errorHandler from './middleware/errorHandler.js';
 import { reminderJob, scheduleReminderJob } from './jobs/reminderJob.js';
 
 // Test / dev routes
-import testEmailRoute from './routes/testEmail.js'; //  routes folder
+import testEmailRoute from './routes/testEmail.js'; // routes folder
 import testTasksRoute from './test/testTask.js';   // test folder
 import { fixTasks } from './utils/fixTasks.js';    // utils folder
 
 const app = express();
 connectDB();
+
+// Enable CORS for your frontend Render URL
+app.use(cors({
+  origin: 'https://tasks-manager-api-vjni.onrender.com/api/auth',
+  credentials: true
+}));
 
 // Parse JSON
 app.use(express.json());
@@ -27,8 +34,8 @@ app.use('/api/reminders', reminderRoutes);
 
 // Only mount test / dev routes in non-production
 if (process.env.NODE_ENV !== 'production') {
-  app.use('/api/test-email', testEmailRoute);   // test email route
-  app.use('/api/test-tasks', testTasksRoute);   // test tasks route
+  app.use('/api/test-email', testEmailRoute);
+  app.use('/api/test-tasks', testTasksRoute);
 
   // Wrap fixTasks utility in a route
   app.get('/api/fix-tasks', async (req, res) => {
