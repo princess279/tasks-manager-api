@@ -17,7 +17,7 @@ connectDB();
 
 // Enable CORS for your frontend Render URL
 app.use(cors({
-  origin: 'https://localhost:5173',
+  origin: ['https://localhost:5173'],// local deployed frontend 
   credentials: true
 }));
 
