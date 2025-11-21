@@ -17,7 +17,7 @@ connectDB();
 
 // Enable CORS for your frontend Render URL
 app.use(cors({
-  origin: 'https://tasks-manager-api-vjni.onrender.com/api/auth',
+  origin: 'https://localhost:5173',
   credentials: true
 }));
 
