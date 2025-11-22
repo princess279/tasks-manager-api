@@ -17,9 +17,8 @@ connectDB();
 
 // Enable CORS for your frontend Render URL
 app.use(cors({
-  origin: ['https://localhost:5173',// local dev
-           'https://task-manager-frontend-eovn.onrender.com' // your deployed frontend
-  ],
+  origin: "https://task-manager-frontend-eovn.onrender.com", // your frontend URL
+  
   credentials: true
 }));
 
