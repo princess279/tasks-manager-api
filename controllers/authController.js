@@ -4,11 +4,6 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import sendEmail from '../utils/email.js';
 
-// Check if email credentials exist
-if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-  console.error('Email credentials are missing in .env file');
-}
-
 // Register a new user
 export const registerUser = async (req, res) => {
   const { name, email, password } = req.body;
