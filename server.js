@@ -18,8 +18,7 @@ connectDB();
 // Enable CORS for your frontend Render URL
 app.use(cors({
   origin: "https://task-manager-frontend-eovn.onrender.com", // your frontend URL
-  
-  credentials: true
+   credentials: true
 }));
 
 // Parse JSON
