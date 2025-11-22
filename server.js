@@ -15,10 +15,23 @@ import { fixTasks } from './utils/fixTasks.js';    // utils folder
 const app = express();
 connectDB();
 
-// Enable CORS for your frontend Render URL
+// Allowed origins for CORS
+const allowedOrigins = [
+  "http://localhost:5173", // local dev
+  "https://task-manager-frontend-eovn.onrender.com" // production frontend
+];
+
+// Enable CORS
 app.use(cors({
-  origin: "https://task-manager-frontend-eovn.onrender.com", // your frontend URL
-   credentials: true
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true); // allow Postman / curl / non-browser requests
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error("CORS not allowed from this origin"));
+    }
+  },
+  credentials: true
 }));
 
 // Parse JSON
