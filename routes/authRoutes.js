@@ -6,8 +6,12 @@ import {
   registerUser,
   loginUser,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  getMe  // make sure getMe is exported from authController
 } from '../controllers/authController.js';
+
+// Import protect middleware
+import { protect } from '../middleware/authMiddleware.js';
 
 // Route to register a new user
 router.post('/register', registerUser);
@@ -21,5 +25,7 @@ router.post('/forgot-password', forgotPassword);
 // Route to complete password reset using token
 router.post('/reset-password/:token', resetPassword);
 
-// Correct ESM export
+// **Route to get logged-in user info**
+router.get('/me', protect, getMe);
+
 export default router;

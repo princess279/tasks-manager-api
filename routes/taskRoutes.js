@@ -1,14 +1,15 @@
+// routes/taskRoutes.js
 import express from 'express';
-import authMiddleware from '../middleware/authMiddleware.js';
+import { protect } from '../middleware/authMiddleware.js';
 import { protectTaskOwnership } from '../middleware/protectTaskOwnership.js';
 import * as taskController from '../controllers/taskController.js';
 
 const router = express.Router();
 
-// CREATE TASK 
+// CREATE TASK
 router.post(
   '/',
-  authMiddleware,
+  protect,
   taskController.validateTask,
   taskController.checkValidation,
   taskController.createTask
@@ -17,19 +18,34 @@ router.post(
 // GET TASKS
 router.get(
   '/',
-  authMiddleware,
+  protect,
   taskController.validateFilters,
   taskController.checkValidation,
   taskController.getTasks
 );
 
-// UPDATE TASK 
-router.put('/:id', authMiddleware, protectTaskOwnership, taskController.updateTask);
+// UPDATE TASK
+router.put(
+  '/:id',
+  protect,
+  protectTaskOwnership,
+  taskController.updateTask
+);
 
-// DELETE TASK 
-router.delete('/:id', authMiddleware, protectTaskOwnership, taskController.deleteTask);
+// DELETE TASK
+router.delete(
+  '/:id',
+  protect,
+  protectTaskOwnership,
+  taskController.deleteTask
+);
 
-// MARK TASK COMPLETE 
-router.patch('/:id/complete', authMiddleware, protectTaskOwnership, taskController.markTaskComplete);
+// MARK TASK COMPLETE
+router.patch(
+  '/:id/complete',
+  protect,
+  protectTaskOwnership,
+  taskController.markTaskComplete
+);
 
 export default router;

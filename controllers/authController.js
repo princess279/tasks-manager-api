@@ -58,6 +58,19 @@ export const loginUser = async (req, res) => {
   }
 };
 
+// Get currently logged-in user
+export const getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password'); // exclude password
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json({ user });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch user data', error: err.message });
+  }
+};
+
 // Initiate password reset
 export const forgotPassword = async (req, res) => {
   const { email } = req.body;
@@ -71,7 +84,7 @@ export const forgotPassword = async (req, res) => {
     user.resetTokenExpiry = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:4000'}/reset-password/${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password/${resetToken}`;
     const message = `You requested a password reset. Click this link to reset your password: ${resetUrl}`;
 
     await sendEmail(user.email, 'Password Reset', message);
@@ -101,7 +114,7 @@ export const resetPassword = async (req, res) => {
     await user.save();
 
     res.status(200).json({ message: 'Password has been reset successfully' });
-  } catch (err) {
+ } catch (err) {
     res.status(500).json({ message: 'Error resetting password', error: err.message });
-  }
+ }
 };

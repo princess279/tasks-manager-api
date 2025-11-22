@@ -1,6 +1,6 @@
 // routes/reminderRoutes.js
 import express from 'express';
-import authMiddleware from '../middleware/authMiddleware.js';
+import { protect } from '../middleware/authMiddleware.js';
 import { reminderJob, scheduleReminderJob } from '../jobs/reminderJob.js';
 
 const router = express.Router();
@@ -13,7 +13,7 @@ scheduleReminderJob();
  * @desc    Manually trigger due date reminders (for testing)
  * @access  Private
  */
-router.post('/trigger', authMiddleware, async (req, res) => {
+router.post('/trigger', protect, async (req, res) => {
   try {
     await reminderJob(); // manually run reminder logic
     return res.status(200).json({ message: 'Reminders triggered successfully' });
