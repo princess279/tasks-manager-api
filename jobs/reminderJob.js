@@ -1,4 +1,3 @@
-// jobs/reminderJob.js
 import cron from 'node-cron';
 import Task from '../models/Task.js';
 import sendEmail from '../utils/email.js';
@@ -7,19 +6,38 @@ import { DateTime } from 'luxon';
 const isProduction = process.env.NODE_ENV === 'production';
 
 /**
+ * Archive past-due tasks automatically
+ */
+export const archivePastTasks = async () => {
+  try {
+    const today = DateTime.now().startOf('day').toJSDate();
+
+    const result = await Task.updateMany(
+      { dueDate: { $lt: today }, status: 'pending' },
+      { $set: { status: 'archived' } }
+    );
+
+    console.log(`Archived ${result.modifiedCount} past-due tasks`);
+  } catch (err) {
+    console.error('Error archiving past tasks:', err.message);
+  }
+};
+
+/**
  * Reminder job: send email for tasks due today
- * In production: only at 8 AM user timezone
- * In development: sends immediately for testing
  */
 export const reminderJob = async () => {
   try {
     console.log('Running task reminder job...');
 
-    // Find pending tasks that haven't been reminded yet
+    // Archive past tasks first
+    await archivePastTasks();
+
+    // Find pending tasks due today that haven't been reminded yet
     const tasks = await Task.find({ status: 'pending', reminderSent: { $ne: true } })
       .populate('user', 'email name timezone');
 
-    if (!tasks.length) return console.log('No pending tasks found.');
+    if (!tasks.length) return console.log('No pending tasks for today.');
 
     for (const task of tasks) {
       const user = task.user;
@@ -29,15 +47,10 @@ export const reminderJob = async () => {
       const nowInUserTz = DateTime.now().setZone(userTz);
       const currentHour = nowInUserTz.hour;
 
-      // Only send reminder at 8 AM in production
-      if (isProduction && currentHour !== 8) continue;
+      if (isProduction && currentHour !== 8) continue; // only 8 AM in prod
 
       const taskDueInUserTz = DateTime.fromJSDate(task.dueDate).setZone(userTz).startOf('day');
-
-      // Skip if task is not due today
       if (!taskDueInUserTz.equals(nowInUserTz.startOf('day'))) continue;
-
-      console.log(`Sending reminder for task "${task.title}" to ${user.email}`);
 
       try {
         await sendEmail(
@@ -48,9 +61,9 @@ export const reminderJob = async () => {
 
         task.reminderSent = true;
         await task.save();
-        console.log(`Reminder sent successfully for "${task.title}"`);
+        console.log(`Reminder sent for "${task.title}"`);
       } catch (emailErr) {
-        console.error(`Failed to send email for "${task.title}":, emailErr.message`);
+        console.error(`Failed to send email for "${task.title}": ${emailErr.message}`);
       }
     }
   } catch (err) {
@@ -60,14 +73,13 @@ export const reminderJob = async () => {
 
 /**
  * Schedule cron job
- * In production: runs every day at 8 AM UTC
- * In development: runs every 30 seconds for testing
+ * Production: 8 AM daily, Dev: every 30 seconds for testing
  */
 export const scheduleReminderJob = () => {
   const schedule = isProduction ? '0 8 * * *' : '*/30 * * * * *';
   try {
     cron.schedule(schedule, reminderJob, { scheduled: true, timezone: 'UTC' });
-    console.log(`Reminder job scheduled with cron: "${schedule}"`);
+    console.log(`Reminder job scheduled: "${schedule}"`);
   } catch (cronErr) {
     console.error('Failed to schedule reminder job:', cronErr.message);
   }
