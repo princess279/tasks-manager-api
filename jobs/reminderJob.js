@@ -1,7 +1,8 @@
+// ReminderJob.js
 import cron from 'node-cron';
+import { DateTime } from 'luxon';
 import Task from '../models/Task.js';
 import sendEmail from '../utils/email.js';
-import { DateTime } from 'luxon';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -30,41 +31,45 @@ export const reminderJob = async () => {
   try {
     console.log('Running task reminder job...');
 
-    // Archive past tasks first
     await archivePastTasks();
 
-    // Find pending tasks due today that haven't been reminded yet
-    const tasks = await Task.find({ status: 'pending', reminderSent: { $ne: true } })
-      .populate('user', 'email name timezone');
+    const tasks = await Task.find({
+      status: 'pending',
+      reminderSent: { $ne: true },
+    }).populate('user', 'email name timezone');
 
-    if (!tasks.length) return console.log('No pending tasks for today.');
+    if (!tasks.length) return console.log('No pending tasks.');
 
     for (const task of tasks) {
       const user = task.user;
       if (!user || !user.email) continue;
 
       const userTz = user.timezone || 'UTC';
-      const nowInUserTz = DateTime.now().setZone(userTz);
-      const currentHour = nowInUserTz.hour;
+      const now = DateTime.now().setZone(userTz);
 
-      if (isProduction && currentHour !== 8) continue; // only 8 AM in prod
-
-      const taskDueInUserTz = DateTime.fromJSDate(task.dueDate).setZone(userTz).startOf('day');
-      if (!taskDueInUserTz.equals(nowInUserTz.startOf('day'))) continue;
-
-      try {
-        await sendEmail(
-          user.email,
-          `Reminder: "${task.title}" is due today`,
-          `Hi ${user.name || 'there'},<br>Your task "<b>${task.title}</b>" is due today.<br>— Task Manager Team`
-        );
-
-        task.reminderSent = true;
-        await task.save();
-        console.log(`Reminder sent for "${task.title}"`);
-      } catch (emailErr) {
-        console.error(`Failed to send email for "${task.title}": ${emailErr.message}`);
+      // If user set a reminder time — only trigger at that exact minute
+      if (task.reminderTime) {
+        const [h, m] = task.reminderTime.split(':');
+        if (now.hour !== Number(h) || now.minute !== Number(m)) continue;
+      } else {
+        // No reminder time → use default 8AM in production
+        if (isProduction && now.hour !== 8) continue;
       }
+
+      // Ensure due date is today
+      const due = DateTime.fromJSDate(task.dueDate).setZone(userTz);
+      if (!due.hasSame(now, 'day')) continue;
+
+      // Send reminder
+      await sendEmail(
+        user.email,
+        `Reminder: "${task.title}" is due today`,
+        `Hi ${user.name || 'there'},<br>Your task "<b>${task.title}</b>" is due today.<br>— Task Manager`
+      );
+
+      task.reminderSent = true;
+      await task.save();
+      console.log(`Reminder sent for ${task.title}`);
     }
   } catch (err) {
     console.error('Error running reminder job:', err.message);

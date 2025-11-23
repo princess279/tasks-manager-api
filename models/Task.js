@@ -14,7 +14,7 @@ const taskSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'in-progress', 'completed'],
+      enum: ['pending', 'in-progress', 'completed', 'archived'],
       default: 'pending',
     },
     dueDate: {
@@ -23,11 +23,20 @@ const taskSchema = new mongoose.Schema(
     },
     reminderSent: {
       type: Boolean,
-      default: false, // 
+      default: false,
     },
     completed: {
       type: Boolean,
       default: false,
+    },
+    priority: {
+      type: String,
+      enum: ['High', 'Medium', 'Low'],
+      default: 'Medium',
+    },
+    reminderTime: {
+      type: String, // Optional HH:mm string
+      default: null,
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,
