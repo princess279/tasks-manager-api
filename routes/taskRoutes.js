@@ -32,7 +32,7 @@ router.put(
   taskController.updateTask
 );
 
-// DELETE TASK
+// DELETE ONE TASK
 router.delete(
   '/:id',
   protect,
@@ -48,15 +48,11 @@ router.patch(
   taskController.markTaskComplete
 );
 
-// DELETE ALL TASKS FOR LOGGED-IN USER
-router.delete('/all', protect, async (req, res) => {
-  try {
-    const result = await taskController.deleteAllTasks(req.user.id);
-    res.status(200).json({ message: `Deleted ${result.deletedCount} tasks` });
-  } catch (err) {
-    console.error('Error deleting all tasks:', err.message);
-    res.status(500).json({ message: 'Server error', error: err.message });
-  }
-});
+// DELETE ALL TASKS (must be ABOVE /:id)
+router.delete(
+  '/all',
+  protect,
+  taskController.deleteAllTasks
+);
 
 export default router;

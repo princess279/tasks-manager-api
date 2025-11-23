@@ -122,11 +122,12 @@ export const markTaskComplete = async (req, res) => {
   }
 };
 
-// DELETE ALL TASKS FOR A USER
+// DELETE ALL TASKS FOR LOGGED-IN USER
 export const deleteAllTasks = async (req, res) => {
   try {
-    const result = await Task.deleteMany({ user: req.user.id });
-    console.log(`All tasks deleted for user: ${req.user.id}`);
+    const userId = req.user.id; // current logged-in user
+    const result = await Task.deleteMany({ user: userId });
+    console.log(`All tasks deleted for user: ${userId}`);
     return res.status(200).json({ message: `Deleted ${result.deletedCount} tasks` });
   } catch (err) {
     console.error('Error deleting all tasks:', err.message);
