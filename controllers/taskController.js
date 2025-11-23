@@ -2,34 +2,19 @@
 import Task from '../models/Task.js';
 import { validationResult, body, query } from 'express-validator';
 
-// =====================
-// VALIDATION
-// =====================
+// ------------------- VALIDATION -------------------
 
 // Validation rules for creating/updating tasks
 export const validateTask = [
   body('title').notEmpty().withMessage('Title is required'),
   body('description').optional().isString().withMessage('Description must be a string'),
   body('dueDate').optional().isISO8601().toDate().withMessage('Invalid date format'),
-  body('reminderTime')
-    .optional()
-    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
-    .withMessage('Reminder time must be in HH:mm format'),
-  body('status').optional().isIn(['pending', 'in-progress', 'completed']),
-  body('priority').optional().isIn(['High', 'Medium', 'Low']),
 ];
 
 // Validation for query filters
 export const validateFilters = [
-  query('status')
-    .optional()
-    .isString()
-    .withMessage('Status must be a string'),
-  query('dueDate')
-    .optional()
-    .isISO8601()
-    .toDate()
-    .withMessage('dueDate must be a valid date'),
+  query('status').optional().isString().withMessage('Status must be a string'),
+  query('dueDate').optional().isISO8601().toDate().withMessage('dueDate must be a valid date'),
 ];
 
 // Middleware to check validation results
@@ -42,23 +27,20 @@ export const checkValidation = (req, res, next) => {
   next();
 };
 
-// =====================
-// CONTROLLERS
-// =====================
+// ------------------- CONTROLLERS -------------------
 
 // CREATE TASK
 export const createTask = async (req, res) => {
   try {
     const { title, description, dueDate, priority, reminderTime } = req.body;
-
     const task = await Task.create({
       title,
       description,
       dueDate,
-      priority: priority || 'Medium',
+      priority,
       reminderTime: reminderTime || null,
-      status: 'pending',
       user: req.user.id,
+      status: 'pending',
     });
 
     console.log(`Task created: ${task._id} by user: ${req.user.id}`);
@@ -106,7 +88,6 @@ export const updateTask = async (req, res) => {
 
     await task.save();
     console.log(`Task updated: ${task._id} by user: ${req.user.id}`);
-
     return res.status(200).json({ message: 'Task updated successfully', task });
   } catch (err) {
     console.error('Error updating task:', err.message);
@@ -114,14 +95,12 @@ export const updateTask = async (req, res) => {
   }
 };
 
-// DELETE TASK
+// DELETE SINGLE TASK
 export const deleteTask = async (req, res) => {
   try {
     const task = req.task; // from protectTaskOwnership
-
     await task.deleteOne();
     console.log(`Task deleted: ${task._id} by user: ${req.user.id}`);
-
     return res.status(200).json({ message: 'Task deleted successfully', task });
   } catch (err) {
     console.error('Error deleting task:', err.message);
@@ -134,14 +113,23 @@ export const markTaskComplete = async (req, res) => {
   try {
     const task = req.task; // from protectTaskOwnership
     task.status = 'completed';
-    task.completed = true;
-
     await task.save();
     console.log(`Task marked complete: ${task._id} by user: ${req.user.id}`);
-
     return res.status(200).json({ message: 'Task marked complete', task });
   } catch (err) {
     console.error('Error marking task complete:', err.message);
+    return res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// DELETE ALL TASKS FOR A USER
+export const deleteAllTasks = async (req, res) => {
+  try {
+    const result = await Task.deleteMany({ user: req.user.id });
+    console.log(`All tasks deleted for user: ${req.user.id}`);
+    return res.status(200).json({ message: `Deleted ${result.deletedCount} tasks` });
+  } catch (err) {
+    console.error('Error deleting all tasks:', err.message);
     return res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
