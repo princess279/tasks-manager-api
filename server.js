@@ -22,7 +22,8 @@ connectDB();
 // Allowed origins for CORS
 const allowedOrigins = [
   "http://localhost:5173", // local dev
-  "https://task-manager-frontend-eovn.onrender.com" // production frontend
+  "https://task-manager-frontend-eovn.onrender.com", // production frontend
+  "https://tasks-manager-api-vjni.onrender.com/api", // production backend
 ];
 
 // Enable CORS
