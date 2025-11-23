@@ -1,13 +1,22 @@
+// controllers/taskController.js
 import Task from '../models/Task.js';
 import { validationResult, body, query } from 'express-validator';
 
+// =====================
 // VALIDATION
+// =====================
 
 // Validation rules for creating/updating tasks
 export const validateTask = [
   body('title').notEmpty().withMessage('Title is required'),
   body('description').optional().isString().withMessage('Description must be a string'),
   body('dueDate').optional().isISO8601().toDate().withMessage('Invalid date format'),
+  body('reminderTime')
+    .optional()
+    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+    .withMessage('Reminder time must be in HH:mm format'),
+  body('status').optional().isIn(['pending', 'in-progress', 'completed']),
+  body('priority').optional().isIn(['High', 'Medium', 'Low']),
 ];
 
 // Validation for query filters
@@ -33,18 +42,23 @@ export const checkValidation = (req, res, next) => {
   next();
 };
 
-//CONTROLLERS 
+// =====================
+// CONTROLLERS
+// =====================
 
 // CREATE TASK
 export const createTask = async (req, res) => {
   try {
-    const { title, description, dueDate } = req.body;
+    const { title, description, dueDate, priority, reminderTime } = req.body;
+
     const task = await Task.create({
       title,
       description,
       dueDate,
-      user: req.user.id,
+      priority: priority || 'Medium',
+      reminderTime: reminderTime || null,
       status: 'pending',
+      user: req.user.id,
     });
 
     console.log(`Task created: ${task._id} by user: ${req.user.id}`);
@@ -81,12 +95,14 @@ export const getTasks = async (req, res) => {
 export const updateTask = async (req, res) => {
   try {
     const task = req.task; // from protectTaskOwnership
-    const { title, description, status, dueDate } = req.body;
+    const { title, description, status, dueDate, priority, reminderTime } = req.body;
 
     if (title !== undefined) task.title = title;
     if (description !== undefined) task.description = description;
     if (status !== undefined) task.status = status;
     if (dueDate !== undefined) task.dueDate = dueDate;
+    if (priority !== undefined) task.priority = priority;
+    if (reminderTime !== undefined) task.reminderTime = reminderTime;
 
     await task.save();
     console.log(`Task updated: ${task._id} by user: ${req.user.id}`);
@@ -102,11 +118,10 @@ export const updateTask = async (req, res) => {
 export const deleteTask = async (req, res) => {
   try {
     const task = req.task; // from protectTaskOwnership
-    
-    //Use deleteOne on the document
-    await task.deleteOne();
 
+    await task.deleteOne();
     console.log(`Task deleted: ${task._id} by user: ${req.user.id}`);
+
     return res.status(200).json({ message: 'Task deleted successfully', task });
   } catch (err) {
     console.error('Error deleting task:', err.message);
@@ -119,9 +134,11 @@ export const markTaskComplete = async (req, res) => {
   try {
     const task = req.task; // from protectTaskOwnership
     task.status = 'completed';
-    await task.save();
+    task.completed = true;
 
+    await task.save();
     console.log(`Task marked complete: ${task._id} by user: ${req.user.id}`);
+
     return res.status(200).json({ message: 'Task marked complete', task });
   } catch (err) {
     console.error('Error marking task complete:', err.message);
