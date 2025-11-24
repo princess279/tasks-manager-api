@@ -131,6 +131,9 @@ export const deleteAllTasks = async (req, res) => {
     return res.status(200).json({ message: `Deleted ${result.deletedCount} tasks` });
   } catch (err) {
     console.error('Error deleting all tasks:', err.message);
-    return res.status(500).json({ message: 'Server error', error: err.message });
+    return res.status(500).json({
+       message: 'Server error',
+        error: err.message
+     });
   }
 };
