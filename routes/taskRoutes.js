@@ -24,6 +24,13 @@ router.get(
   taskController.getTasks
 );
 
+// DELETE ALL TASKS (must be ABOVE /:id)
+router.delete(
+  '/all',
+  protect,
+  taskController.deleteAllTasks
+);
+
 // UPDATE TASK
 router.put(
   '/:id',
@@ -46,13 +53,6 @@ router.patch(
   protect,
   protectTaskOwnership,
   taskController.markTaskComplete
-);
-
-// DELETE ALL TASKS (must be ABOVE /:id)
-router.delete(
-  '/all',
-  protect,
-  taskController.deleteAllTasks
 );
 
 export default router;
