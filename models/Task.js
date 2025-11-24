@@ -29,6 +29,10 @@ const taskSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    autocompleted: {
+      type:Boolean,
+      default:false,
+    },
     priority: {
       type: String,
       enum: ['High', 'Medium', 'Low'],

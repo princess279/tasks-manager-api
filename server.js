@@ -10,6 +10,8 @@ import taskRoutes from './routes/taskRoutes.js';
 import reminderRoutes from './routes/reminderRoutes.js';
 import errorHandler from './middleware/errorHandler.js';
 import { reminderJob, scheduleReminderJob } from './jobs/reminderJob.js';
+import cron from 'node-cron';
+import Task from './models/Task.js'; // Your Task model
 
 // Test / dev routes
 import testEmailRoute from './routes/testEmail.js'; // routes folder
@@ -78,6 +80,31 @@ app.get('/api/reminders/trigger-reminders', async (req, res) => {
   }
 });
 
+// ------------------- Auto-complete Cron Job -------------------
+const scheduleAutoCompleteTasks = () => {
+  cron.schedule('* * * * *', async () => { // Runs every minute
+    try {
+      const now = new Date();
+      const tasksToComplete = await Task.find({
+        completed: false,
+        $or: [
+          { dueDate: { $lte: now } },
+          { reminderTime: { $lte: now } },
+        ],
+      });
+
+      for (let task of tasksToComplete) {
+        task.completed = true;
+        task.autoCompleted = true; // make sure your Task model has this field
+        await task.save();
+        console.log(`Task "${task.title}" automatically marked as completed`);
+      }
+    } catch (err) {
+      console.error('Error auto-completing tasks:', err);
+    }
+  });
+};
+
 // Centralized error handling
 app.use(errorHandler);
 
@@ -85,5 +112,6 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  scheduleReminderJob();
+  scheduleReminderJob();      // existing reminder job
+  scheduleAutoCompleteTasks(); // new auto-complete cron job
 });
