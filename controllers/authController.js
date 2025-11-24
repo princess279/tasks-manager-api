@@ -4,56 +4,69 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import sendEmail from '../utils/email.js';
 
+// -------------------- HELPERS --------------------
+
+// Generate JWT
+const generateToken = (userId) => {
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRE || '1h',
+  });
+};
+
+// -------------------- CONTROLLERS --------------------
+
 // Register a new user
 export const registerUser = async (req, res) => {
-  const { name, email, password } = req.body;
-
   try {
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password)
+      return res.status(400).json({ message: 'All fields are required' });
+
+    const emailLower = email.toLowerCase();
+
+    const existingUser = await User.findOne({ email: emailLower });
+    if (existingUser)
       return res.status(400).json({ message: 'User already exists with this email' });
-    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: hashedPassword });
+    const user = await User.create({ name, email: emailLower, password: hashedPassword });
 
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRE || '1h' }
-    );
+    const token = generateToken(user._id);
 
     res.status(201).json({
       user: { id: user._id, name: user.name, email: user.email },
       token,
     });
   } catch (err) {
+    console.error('Signup error:', err);
     res.status(500).json({ message: 'Error registering user', error: err.message });
   }
 };
 
 // Login user
 export const loginUser = async (req, res) => {
-  const { email, password } = req.body;
-
   try {
-    const user = await User.findOne({ email });
+    const { email, password } = req.body;
+
+    if (!email || !password)
+      return res.status(400).json({ message: 'Email and password are required' });
+
+    const emailLower = email.toLowerCase();
+    const user = await User.findOne({ email: emailLower });
     if (!user) return res.status(400).json({ message: 'Invalid email or password' });
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Invalid email or password' });
 
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRE || '1h' }
-    );
+    const token = generateToken(user._id);
 
     res.status(200).json({
       user: { id: user._id, name: user.name, email: user.email },
       token,
     });
   } catch (err) {
+    console.error('Login error:', err);
     res.status(500).json({ message: 'Error logging in', error: err.message });
   }
 };
@@ -61,10 +74,9 @@ export const loginUser = async (req, res) => {
 // Get currently logged-in user
 export const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password'); // exclude password
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
     res.status(200).json({ user });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch user data', error: err.message });
@@ -73,10 +85,12 @@ export const getMe = async (req, res) => {
 
 // Initiate password reset
 export const forgotPassword = async (req, res) => {
-  const { email } = req.body;
-
   try {
-    const user = await User.findOne({ email });
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+
+    const emailLower = email.toLowerCase();
+    const user = await User.findOne({ email: emailLower });
     if (!user) return res.status(404).json({ message: 'No user found with that email' });
 
     const resetToken = crypto.randomBytes(32).toString('hex');
@@ -97,10 +111,12 @@ export const forgotPassword = async (req, res) => {
 
 // Reset password using token
 export const resetPassword = async (req, res) => {
-  const { token } = req.params;
-  const { password } = req.body;
-
   try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!password) return res.status(400).json({ message: 'Password is required' });
+
     const user = await User.findOne({
       resetToken: token,
       resetTokenExpiry: { $gt: Date.now() },
@@ -114,7 +130,7 @@ export const resetPassword = async (req, res) => {
     await user.save();
 
     res.status(200).json({ message: 'Password has been reset successfully' });
- } catch (err) {
+  } catch (err) {
     res.status(500).json({ message: 'Error resetting password', error: err.message });
- }
+  }
 };
