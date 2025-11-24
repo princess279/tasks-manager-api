@@ -1,34 +1,22 @@
 // middleware/protectTaskOwnership.js
-import Task from '../models/Task.js';
+import Task from '../models/taskModel.js';
 
-// Middleware to ensure the logged-in user owns the task
 export const protectTaskOwnership = async (req, res, next) => {
   try {
-    const taskId = req.params.id;
+    const task = await Task.findById(req.params.id);
 
-    // 1. Validate ObjectId
-    if (!taskId.match(/^[0-9a-fA-F]{24}$/)) {
-      return res.status(400).json({ message: 'Invalid task ID' });
-    }
-
-    // 2. Fetch the task from DB
-    const task = await Task.findById(taskId);
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
 
-    // 3. Check ownership
-    if (task.user.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'You are not authorized to access this task' });
+    // Ensure the logged-in user owns this task
+    if (task.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to access this task' });
     }
 
-    // 4. Attach task to req
-    req.task = task;
-
-    // 5. Pass to next middleware/controller
+    req.task = task; // attach for controller
     next();
-  } catch (err) {
-    console.error('Error in protectTaskOwnership:', err.message);
-    return res.status(500).json({ message: 'Server error', error: err.message });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error validating task ownership' });
   }
 };
