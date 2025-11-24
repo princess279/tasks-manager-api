@@ -1,3 +1,4 @@
+// controllers/authController.js
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -6,10 +7,10 @@ import sendEmail from '../utils/email.js';
 
 // -------------------- HELPERS --------------------
 
-// Generate JWT
+// Generate JWT token
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '1h',
+    expiresIn: process.env.JWT_EXPIRE || '24h', // matches your .env
   });
 };
 
@@ -20,27 +21,37 @@ export const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    if (!name || !email || !password)
+    if (!name || !email || !password) {
       return res.status(400).json({ message: 'All fields are required' });
+    }
 
     const emailLower = email.toLowerCase();
 
+    // Check if user already exists
     const existingUser = await User.findOne({ email: emailLower });
-    if (existingUser)
+    if (existingUser) {
       return res.status(400).json({ message: 'User already exists with this email' });
+    }
 
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email: emailLower, password: hashedPassword });
+
+    // Create user
+    const user = await User.create({
+      name,
+      email: emailLower,
+      password: hashedPassword
+    });
 
     const token = generateToken(user._id);
 
-    res.status(201).json({
+    return res.status(201).json({
       user: { id: user._id, name: user.name, email: user.email },
-      token,
+      token
     });
   } catch (err) {
     console.error('Signup error:', err);
-    res.status(500).json({ message: 'Error registering user', error: err.message });
+    return res.status(500).json({ message: 'Error registering user', error: err.message });
   }
 };
 
@@ -49,41 +60,53 @@ export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password)
+    if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
+    }
 
     const emailLower = email.toLowerCase();
+    console.log("Attempting login with email:", emailLower);
+
     const user = await User.findOne({ email: emailLower });
-    if (!user) return res.status(400).json({ message: 'Invalid email or password' });
+    console.log("User fetched from DB:", user);
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid email or password' });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: 'Invalid email or password' });
+    console.log("Password match result:", isMatch);
+
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid email or password' });
+    }
 
     const token = generateToken(user._id);
 
-    res.status(200).json({
+    return res.status(200).json({
       user: { id: user._id, name: user.name, email: user.email },
-      token,
+      token
     });
   } catch (err) {
     console.error('Login error:', err);
-    res.status(500).json({ message: 'Error logging in', error: err.message });
+    return res.status(500).json({ message: 'Error logging in', error: err.message });
   }
 };
 
-// Get currently logged-in user
+// Get current logged-in user
 export const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    res.status(200).json({ user });
+    return res.status(200).json({ user });
   } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch user data', error: err.message });
+    console.error('GetMe error:', err);
+    return res.status(500).json({ message: 'Failed to fetch user data', error: err.message });
   }
 };
 
-// Initiate password reset
+// Forgot password
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -98,18 +121,19 @@ export const forgotPassword = async (req, res) => {
     user.resetTokenExpiry = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password/${resetToken}`;
+    const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
     const message = `You requested a password reset. Click this link to reset your password: ${resetUrl}`;
 
     await sendEmail(user.email, 'Password Reset', message);
 
-    res.status(200).json({ message: 'Password reset email sent' });
+    return res.status(200).json({ message: 'Password reset email sent' });
   } catch (err) {
-    res.status(500).json({ message: 'Error sending reset email', error: err.message });
+    console.error('ForgotPassword error:', err);
+    return res.status(500).json({ message: 'Error sending reset email', error: err.message });
   }
 };
 
-// Reset password using token
+// Reset password
 export const resetPassword = async (req, res) => {
   try {
     const { token } = req.params;
@@ -129,8 +153,9 @@ export const resetPassword = async (req, res) => {
     user.resetTokenExpiry = undefined;
     await user.save();
 
-    res.status(200).json({ message: 'Password has been reset successfully' });
+    return res.status(200).json({ message: 'Password has been reset successfully' });
   } catch (err) {
-    res.status(500).json({ message: 'Error resetting password', error: err.message });
+    console.error('ResetPassword error:', err);
+    return res.status(500).json({ message: 'Error resetting password', error: err.message });
   }
 };
