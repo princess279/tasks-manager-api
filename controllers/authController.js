@@ -19,35 +19,46 @@ const generateToken = (userId) => {
 // Register a new user
 export const registerUser = async (req, res) => {
   try {
+    console.log('--- Register User Called ---');
+    console.log('Request body:', req.body);
+
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
+      console.log('Missing fields:', { name, email, password });
       return res.status(400).json({ message: 'All fields are required' });
     }
 
     const emailLower = email.toLowerCase();
+    console.log('Lowercased email:', emailLower);
 
     // Check if user already exists
     const existingUser = await User.findOne({ email: emailLower });
+    console.log('Existing user found:', existingUser);
+
     if (existingUser) {
+      console.log('User already exists with this email');
       return res.status(400).json({ message: 'User already exists with this email' });
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
+    console.log('Hashed password:', hashedPassword);
 
     // Create user
     const user = await User.create({
       name,
       email: emailLower,
-      password: hashedPassword
+      password: hashedPassword,
     });
+    console.log('User saved in DB:', user);
 
     const token = generateToken(user._id);
+    console.log('Generated JWT token:', token);
 
     return res.status(201).json({
       user: { id: user._id, name: user.name, email: user.email },
-      token
+      token,
     });
   } catch (err) {
     console.error('Signup error:', err);
@@ -58,34 +69,41 @@ export const registerUser = async (req, res) => {
 // Login user
 export const loginUser = async (req, res) => {
   try {
+    console.log('--- Login User Called ---');
+    console.log('Request body:', req.body);
+
     const { email, password } = req.body;
 
     if (!email || !password) {
+      console.log('Missing email or password');
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
     const emailLower = email.toLowerCase();
-    console.log("Attempting login with email:", emailLower);
+    console.log('Lowercased email:', emailLower);
 
     const user = await User.findOne({ email: emailLower });
-    console.log("User fetched from DB:", user);
+    console.log('User fetched from DB:', user);
 
     if (!user) {
+      console.log('No user found with this email');
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log("Password match result:", isMatch);
+    console.log('Password match result:', isMatch);
 
     if (!isMatch) {
+      console.log('Password does not match');
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
     const token = generateToken(user._id);
+    console.log('Generated JWT token:', token);
 
     return res.status(200).json({
       user: { id: user._id, name: user.name, email: user.email },
-      token
+      token,
     });
   } catch (err) {
     console.error('Login error:', err);
