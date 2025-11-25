@@ -48,8 +48,24 @@ app.use(express.json());
 app.get('/', (req, res) => res.send('Server is running successfully!'));
 
 // ------------------- Ping route for uptime / cron -------------------
-app.get('/api/ping', (req, res) => {
+let isReminderJobRunning = false; // prevent overlapping jobs
+app.get('/api/ping', async (req, res) => {
   console.log('Ping received at', new Date().toISOString());
+
+  if (!isReminderJobRunning) {
+    isReminderJobRunning = true;
+    try {
+      await reminderJob();
+      console.log('Reminder job triggered via ping.');
+    } catch (err) {
+      console.error('Error triggering reminder job via ping:', err);
+    } finally {
+      isReminderJobRunning = false; // reset flag
+    }
+  } else {
+    console.log('Reminder job already running, skipping this ping.');
+  }
+
   res.status(200).json({ status: 'ok', time: new Date().toISOString() });
 });
 

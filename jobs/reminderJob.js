@@ -6,6 +6,7 @@ import User from '../models/User.js';
 import sendEmail from '../utils/email.js';
 
 const isProduction = process.env.NODE_ENV === 'production';
+let isRunning = false; // Prevent overlapping executions
 
 // ------------------ ARCHIVE PAST TASKS ------------------
 export const archivePastTasks = async () => {
@@ -25,6 +26,12 @@ export const archivePastTasks = async () => {
 
 // ------------------ REMINDER JOB ------------------
 export const reminderJob = async () => {
+  if (isRunning) {
+    console.log('Reminder job already running, skipping...');
+    return;
+  }
+
+  isRunning = true;
   try {
     console.log('Running task reminder job...');
 
@@ -115,6 +122,8 @@ export const reminderJob = async () => {
     }
   } catch (err) {
     console.error('Error running reminder job:', err.message);
+  } finally {
+    isRunning = false;
   }
 };
 
