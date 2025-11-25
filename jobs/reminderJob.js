@@ -35,7 +35,6 @@ export const reminderJob = async () => {
     // ------------------ TASK REMINDERS ------------------
     const tasks = await Task.find({
       status: 'pending',
-      reminderSent: { $ne: true },
     }).populate('user', 'email name timezone');
 
     for (const task of tasks) {
@@ -54,7 +53,6 @@ export const reminderJob = async () => {
       if (task.reminderTime) {
         const [h, m] = task.reminderTime.split(':');
 
-        // ±1 minute buffer
         const taskReminderTime = now.set({
           hour: Number(h),
           minute: Number(m),
@@ -64,11 +62,10 @@ export const reminderJob = async () => {
 
         const diffMinutes = Math.abs(now.diff(taskReminderTime, 'minutes').minutes);
 
-        if (diffMinutes <= 1) shouldSend = true;
-
+        if (diffMinutes <= 1 && !task.reminderSent) shouldSend = true;
       } else {
-        // Default 8 AM if no reminder time (PRODUCTION ONLY)
-        if (isProduction && now.hour === 8 && now.minute <= 1) {
+        // Default 8 AM reminder
+        if (now.hour === 8 && now.minute <= 1 && !task.reminderSent) {
           shouldSend = true;
         }
       }
@@ -106,6 +103,7 @@ export const reminderJob = async () => {
 
       const diffMinutes = Math.abs(now.diff(dailyReminderTime, 'minutes').minutes);
 
+      // Send if within ±1 minute
       if (diffMinutes <= 1) {
         await sendEmail(
           user.email,
@@ -122,7 +120,8 @@ export const reminderJob = async () => {
 
 // ------------------ CRON SCHEDULER ------------------
 export const scheduleReminderJob = () => {
-  const schedule = isProduction ? '*/1 * * * *' : '*/30 * * * * *';
+  // Run every minute in both dev and production to ensure reminders are sent
+  const schedule = '* * * * *';
 
   try {
     cron.schedule(schedule, reminderJob, { scheduled: true, timezone: 'UTC' });
