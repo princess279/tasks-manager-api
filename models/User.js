@@ -20,6 +20,16 @@ const userSchema = new mongoose.Schema(
     },
     resetToken: String,
     resetTokenExpiry: Date,
+
+    // ---------- Daily reminders ----------
+    dailyReminder: {
+      type: Boolean,
+      default: false, // optional, user must opt-in
+    },
+    reminderTime: {
+      type: String, // store as "HH:MM" or ISO time string
+      default: null, // optional, only used if dailyReminder is true
+    },
   },
   { timestamps: true }
 );

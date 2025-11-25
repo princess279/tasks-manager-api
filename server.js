@@ -112,6 +112,10 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  scheduleReminderJob();      // existing reminder job
-  scheduleAutoCompleteTasks(); // new auto-complete cron job
+
+  // Schedule task reminders + daily user reminders
+  scheduleReminderJob();
+
+  // Schedule auto-complete tasks
+  scheduleAutoCompleteTasks();
 });
