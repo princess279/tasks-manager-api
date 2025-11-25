@@ -47,10 +47,10 @@ app.use(express.json());
 // Health check
 app.get('/', (req, res) => res.send('Server is running successfully!'));
 
-// ------------------- Ping route for Render Cron -------------------
+// ------------------- Ping route for uptime / cron -------------------
 app.get('/api/ping', (req, res) => {
   console.log('Ping received at', new Date().toISOString());
-  res.status(200).json({ message: 'Pong' });
+  res.status(200).json({ status: 'ok', time: new Date().toISOString() });
 });
 
 // Main API routes
