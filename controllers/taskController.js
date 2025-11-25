@@ -1,4 +1,3 @@
-// controllers/taskController.js
 import Task from '../models/Task.js';
 import { validationResult, body, query } from 'express-validator';
 
@@ -32,13 +31,14 @@ export const checkValidation = (req, res, next) => {
 // CREATE TASK
 export const createTask = async (req, res) => {
   try {
-    const { title, description, dueDate, priority, reminderTime } = req.body;
+    const { title, description, dueDate, priority, reminderTime, dailyReminder } = req.body;
     const task = await Task.create({
       title,
       description,
       dueDate,
       priority,
       reminderTime: reminderTime || null,
+      dailyReminder: dailyReminder || false, // new field
       user: req.user.id,
       status: 'pending',
     });
@@ -77,7 +77,7 @@ export const getTasks = async (req, res) => {
 export const updateTask = async (req, res) => {
   try {
     const task = req.task; // from protectTaskOwnership
-    const { title, description, status, dueDate, priority, reminderTime } = req.body;
+    const { title, description, status, dueDate, priority, reminderTime, dailyReminder } = req.body;
 
     if (title !== undefined) task.title = title;
     if (description !== undefined) task.description = description;
@@ -85,6 +85,7 @@ export const updateTask = async (req, res) => {
     if (dueDate !== undefined) task.dueDate = dueDate;
     if (priority !== undefined) task.priority = priority;
     if (reminderTime !== undefined) task.reminderTime = reminderTime;
+    if (dailyReminder !== undefined) task.dailyReminder = dailyReminder; // new field
 
     await task.save();
     console.log(`Task updated: ${task._id} by user: ${req.user.id}`);
@@ -132,8 +133,8 @@ export const deleteAllTasks = async (req, res) => {
   } catch (err) {
     console.error('Error deleting all tasks:', err.message);
     return res.status(500).json({
-       message: 'Server error',
-        error: err.message
-     });
+      message: 'Server error',
+      error: err.message
+    });
   }
 };

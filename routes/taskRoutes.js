@@ -1,4 +1,3 @@
-// routes/taskRoutes.js
 import express from 'express';
 import { protect } from '../middleware/authMiddleware.js';
 import { protectTaskOwnership } from '../middleware/protectTaskOwnership.js';
@@ -31,12 +30,27 @@ router.delete(
   taskController.deleteAllTasks
 );
 
-// UPDATE TASK
+// UPDATE TASK (including reminder updates)
 router.put(
   '/:id',
   protect,
   protectTaskOwnership,
   taskController.updateTask
+);
+
+// NEW: OPTIONAL dedicated route for updating reminders only (daily checkbox or time)
+router.put(
+  '/:id/reminder',
+  protect,
+  protectTaskOwnership,
+  async (req, res, next) => {
+    // Reuse the existing updateTask logic but only allow reminder fields
+    req.body = {
+      dailyReminder: req.body.dailyReminder,
+      reminderTime: req.body.reminderTime,
+    };
+    return taskController.updateTask(req, res, next);
+  }
 );
 
 // DELETE ONE TASK
