@@ -24,11 +24,15 @@ const userSchema = new mongoose.Schema(
     // ---------- Daily reminders ----------
     dailyReminder: {
       type: Boolean,
-      default: false, // optional, user must opt-in
+      default: false, // user must opt-in
     },
     reminderTime: {
-      type: String, // store as "HH:MM" or ISO time string
-      default: null, // optional, only used if dailyReminder is true
+      type: String, // HH:MM format or ISO string
+      default: null, // used only if dailyReminder is true
+    },
+    timezone: {
+      type: String,
+      default: 'UTC', // fallback if user does not set their timezone
     },
   },
   { timestamps: true }

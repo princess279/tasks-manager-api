@@ -38,14 +38,15 @@ export const reminderJob = async () => {
     await archivePastTasks();
 
     const nowUTC = DateTime.now().setZone('UTC');
-    const tasks = await Task.find({ status: 'pending' }).populate('user', 'email name timezone');
 
+    // ------------------ TASK REMINDERS ------------------
+    const tasks = await Task.find({ status: 'pending' }).populate('user', 'email name timezone');
     if (tasks.length === 0) console.log('No pending tasks found.');
 
     for (const task of tasks) {
       const user = task.user;
       if (!user || !user.email) {
-        console.log(`Task "${task.title}" has no user or email, skipping.`);
+        console.log(`Task "${task.title}" has no user/email, skipping.`);
         continue;
       }
 
@@ -56,16 +57,21 @@ export const reminderJob = async () => {
 
       console.log(`Checking task "${task.title}" (ReminderSent: ${task.reminderSent})`);
 
-      // Force sending for testing if reminderSent = false
+      // Only check for tasks due today OR daily reminders
+      const due = DateTime.fromJSDate(task.dueDate).setZone(userTz);
+      if (!task.dailyReminder && !due.hasSame(now, 'day')) {
+        console.log(`Skipping task "${task.title}" — not due today.`);
+        continue;
+      }
+
+      // Only send if reminder not yet sent
       if (!task.reminderSent) {
         if (task.reminderTime) {
           const [h, m] = task.reminderTime.split(':');
           const taskReminderTime = now.set({ hour: Number(h), minute: Number(m), second: 0, millisecond: 0 });
           const diffMinutes = Math.abs(now.diff(taskReminderTime, 'minutes').minutes);
           console.log(`Now: ${now.toFormat('HH:mm')}, Task reminderTime: ${taskReminderTime.toFormat('HH:mm')}, Diff: ${diffMinutes} min`);
-
-          // ±5 minutes window
-          if (diffMinutes <= 5) shouldSend = true;
+          if (diffMinutes <= 5) shouldSend = true; // ±5 min window
         } else {
           // Default 8 AM reminder
           if (now.hour === 8 && now.minute <= 1) shouldSend = true;
@@ -75,10 +81,10 @@ export const reminderJob = async () => {
       }
 
       if (shouldSend) {
-        console.log(`Sending email for task "${task.title}" to ${user.email}...`);
+        console.log(`Sending task reminder for "${task.title}" to ${user.email}...`);
         await sendEmail(
           user.email,
-          `Reminder: "${task.title}" is due${DateTime.fromJSDate(task.dueDate).toFormat(' yyyy-MM-dd')}`,
+          `Reminder: "${task.title}" is due${due.toFormat(' yyyy-MM-dd')}`,
           `Hi ${user.name || 'there'},<br>Your task "<b>${task.title}</b>" is due.<br>— Task Manager`
         );
         task.reminderSent = true;
@@ -104,6 +110,8 @@ export const reminderJob = async () => {
           `Hi ${user.name || 'there'},<br>This is your daily reminder from Task Manager.<br>— Task Manager`
         );
         console.log(`Daily reminder sent to ${user.email}`);
+      } else {
+        console.log(`Skipping daily reminder for ${user.email}, not time yet.`);
       }
     }
 
