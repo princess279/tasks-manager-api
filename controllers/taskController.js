@@ -28,19 +28,33 @@ export const checkValidation = (req, res, next) => {
 
 // ------------------- CONTROLLERS -------------------
 
+({ message: 'Task created successfully', task });
+  } catch (err) {
+    console.error('Error creating task:', err.message);
+    return res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 // CREATE TASK
 export const createTask = async (req, res) => {
   try {
     const { title, description, dueDate, priority, reminderTime, dailyReminder } = req.body;
+
+    // Use user's daily reminder/time if task doesn't have a specific reminder
+    const user = req.user; // logged-in user
+    const finalReminderTime = reminderTime || (dailyReminder ? user.reminderTime : null);
+    const isDailyReminder = dailyReminder ?? user.dailyReminder ?? false;
+
     const task = await Task.create({
       title,
       description,
       dueDate,
       priority,
-      reminderTime: reminderTime || null,
-      dailyReminder: dailyReminder || false, // new field
+      reminderTime: finalReminderTime, // store the actual reminder time for this task
+      dailyReminder: isDailyReminder,   // mark if this task should follow daily reminder
       user: req.user.id,
       status: 'pending',
+      reminderSent: false, // ensures email can be sent
     });
 
     console.log(`Task created: ${task._id} by user: ${req.user.id}`);
