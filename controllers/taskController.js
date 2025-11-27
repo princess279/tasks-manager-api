@@ -33,7 +33,6 @@ export const createTask = async (req, res) => {
   try {
     const { title, description, dueDate, priority, reminderTime, dailyReminder } = req.body;
 
-    // Use user's daily reminder/time if task doesn't have a specific reminder
     const user = req.user; // logged-in user
     const finalReminderTime = reminderTime || (dailyReminder ? user.reminderTime : null);
     const isDailyReminder = dailyReminder ?? user.dailyReminder ?? false;
@@ -43,8 +42,8 @@ export const createTask = async (req, res) => {
       description,
       dueDate,
       priority,
-      reminderTime: finalReminderTime, // store the actual reminder time for this task
-      dailyReminder: isDailyReminder,   // mark if this task should follow daily reminder
+      reminderTime: finalReminderTime,
+      dailyReminder: isDailyReminder,
       user: req.user.id,
       status: 'pending',
       reminderSent: false, // ensures email can be sent
@@ -57,6 +56,7 @@ export const createTask = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
 // GET ALL TASKS
 export const getTasks = async (req, res) => {
   try {
@@ -90,8 +90,14 @@ export const updateTask = async (req, res) => {
     if (status !== undefined) task.status = status;
     if (dueDate !== undefined) task.dueDate = dueDate;
     if (priority !== undefined) task.priority = priority;
-    if (reminderTime !== undefined) task.reminderTime = reminderTime;
-    if (dailyReminder !== undefined) task.dailyReminder = dailyReminder; // new field
+
+    // Reset reminderSent if reminderTime changes
+    if (reminderTime !== undefined && reminderTime !== task.reminderTime) {
+      task.reminderTime = reminderTime;
+      task.reminderSent = false;
+    }
+
+    if (dailyReminder !== undefined) task.dailyReminder = dailyReminder;
 
     await task.save();
     console.log(`Task updated: ${task._id} by user: ${req.user.id}`);
@@ -106,9 +112,8 @@ export const updateTask = async (req, res) => {
 export const deleteTask = async (req, res) => {
   try {
     const task = req.task; // from protectTaskOwnership
-    if (!task)  {   
-      return res.status(404).json({ message: 'Task not found'});
-    }
+    if (!task) return res.status(404).json({ message: 'Task not found' });
+
     await task.deleteOne();
     console.log(`Task deleted: ${task._id} by user: ${req.user.id}`);
     return res.status(200).json({ message: 'Task deleted successfully', task });
@@ -141,9 +146,6 @@ export const deleteAllTasks = async (req, res) => {
     return res.status(200).json({ message: `Deleted ${result.deletedCount} tasks` });
   } catch (err) {
     console.error('Error deleting all tasks:', err.message);
-    return res.status(500).json({
-      message: 'Server error',
-      error: err.message
-    });
+    return res.status(500).json({ message: 'Server error', error: err.message });
   }
 };

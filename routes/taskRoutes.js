@@ -5,6 +5,8 @@ import * as taskController from '../controllers/taskController.js';
 
 const router = express.Router();
 
+// -------------------- TASK ROUTES --------------------
+
 // CREATE TASK
 router.post(
   '/',
@@ -38,13 +40,14 @@ router.put(
   taskController.updateTask
 );
 
-// NEW: OPTIONAL dedicated route for updating reminders only (daily checkbox or time)
+// -------------------- REMINDER-SPECIFIC ROUTE --------------------
+// Optional route to update just the reminder fields
 router.put(
   '/:id/reminder',
   protect,
   protectTaskOwnership,
   async (req, res, next) => {
-    // Reuse the existing updateTask logic but only allow reminder fields
+    // Only allow reminderTime and dailyReminder updates
     req.body = {
       dailyReminder: req.body.dailyReminder,
       reminderTime: req.body.reminderTime,
