@@ -5,25 +5,24 @@ import Task from '../models/Task.js';
 import User from '../models/User.js';
 import sendEmail from '../utils/email.js';
 
-const isProduction = process.env.NODE_ENV === 'production';
-let isRunning = false;
+let isRunning = false; // Prevent overlapping executions
 
 // ------------------ ARCHIVE PAST TASKS ------------------
 export const archivePastTasks = async () => {
   try {
     const today = DateTime.now().startOf('day').toJSDate();
 
-    // NEW: Do NOT archive tasks with dailyReminder = true
+    // Do NOT archive tasks with dailyReminder = true
     const result = await Task.updateMany(
       { 
         dueDate: { $lt: today }, 
         status: 'pending',
-        dailyReminder: false   // 🚀 KEY FIX
+        dailyReminder: { $ne: true }
       },
       { $set: { status: 'archived' } }
     );
 
-    console.log(`Archived ${result.modifiedCount} past-due tasks`);
+    console.log(`Archived ${result.modifiedCount} past-due tasks (excluding daily reminders)`);
   } catch (err) {
     console.error('Error archiving past tasks:', err.message);
   }
@@ -46,9 +45,7 @@ export const reminderJob = async () => {
     const nowUTC = DateTime.now().setZone('UTC');
 
     // ------------------ TASK REMINDERS ------------------
-    const tasks = await Task.find({
-      status: 'pending',
-    }).populate('user', 'email name timezone');
+    const tasks = await Task.find({ status: 'pending' }).populate('user', 'email name timezone');
 
     for (const task of tasks) {
       const user = task.user;
@@ -56,38 +53,26 @@ export const reminderJob = async () => {
 
       const userTz = user.timezone || 'UTC';
       const now = nowUTC.setZone(userTz);
-      const due = DateTime.fromJSDate(task.dueDate).setZone(userTz);
-
-      // Only send if due today
-      if (!due.hasSame(now, 'day')) continue;
 
       let shouldSend = false;
 
-      if (task.reminderTime) {
-        const [h, m] = task.reminderTime.split(':');
-
-        const taskReminderTime = now.set({
-          hour: Number(h),
-          minute: Number(m),
-          second: 0,
-          millisecond: 0,
-        });
-
-        const diffMinutes = Math.abs(now.diff(taskReminderTime, 'minutes').minutes);
-
-        if (diffMinutes <= 1 && !task.reminderSent) shouldSend = true;
-      } else {
-        // Default 8 AM reminder
-        if (now.hour === 8 && now.minute <= 1 && !task.reminderSent) {
-          shouldSend = true;
+      if (!task.reminderSent) {
+        if (task.reminderTime) {
+          const [h, m] = task.reminderTime.split(':');
+          const taskReminderTime = now.set({ hour: Number(h), minute: Number(m), second: 0, millisecond: 0 });
+          const diffMinutes = Math.abs(now.diff(taskReminderTime, 'minutes').minutes);
+          if (diffMinutes <= 5) shouldSend = true;
+        } else {
+          // Default 8 AM reminder
+          if (now.hour === 8 && now.minute <= 1) shouldSend = true;
         }
       }
 
       if (shouldSend) {
         await sendEmail(
           user.email,
-          `Reminder: "${task.title}" is due today`,
-          `Hi ${user.name || 'there'},<br>Your task "<b>${task.title}</b>" is due today.<br>— Task Manager`
+          `Reminder: "${task.title}" is due${DateTime.fromJSDate(task.dueDate).toFormat(' yyyy-MM-dd')}`,
+          `Hi ${user.name || 'there'},<br>Your task "<b>${task.title}</b>" is due.<br>— Task Manager`
         );
 
         task.reminderSent = true;
@@ -97,26 +82,17 @@ export const reminderJob = async () => {
     }
 
     // ------------------ DAILY USER REMINDERS ------------------
-    const users = await User.find({
-      dailyReminder: true,
-      reminderTime: { $exists: true, $ne: null },
-    });
+    const users = await User.find({ dailyReminder: true, reminderTime: { $exists: true, $ne: null } });
 
     for (const user of users) {
       const userTz = user.timezone || 'UTC';
       const now = nowUTC.setZone(userTz);
       const [h, m] = user.reminderTime.split(':');
 
-      const dailyReminderTime = now.set({
-        hour: Number(h),
-        minute: Number(m),
-        second: 0,
-        millisecond: 0,
-      });
-
+      const dailyReminderTime = now.set({ hour: Number(h), minute: Number(m), second: 0, millisecond: 0 });
       const diffMinutes = Math.abs(now.diff(dailyReminderTime, 'minutes').minutes);
 
-      if (diffMinutes <= 1) {
+      if (diffMinutes <= 5) { // ±5 minutes window
         await sendEmail(
           user.email,
           'Daily Reminder',
@@ -135,8 +111,7 @@ export const reminderJob = async () => {
 
 // ------------------ CRON SCHEDULER ------------------
 export const scheduleReminderJob = () => {
-  const schedule = '* * * * *';
-
+  const schedule = '* * * * *'; // every minute
   try {
     cron.schedule(schedule, reminderJob, { scheduled: true, timezone: 'UTC' });
     console.log(`Reminder job scheduled: "${schedule}"`);

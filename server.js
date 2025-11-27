@@ -91,7 +91,7 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// Manual trigger for reminder job
+// Manual trigger for reminder job (test via Postman)
 app.get('/api/reminders/trigger-reminders', async (req, res) => {
   try {
     await reminderJob();
@@ -107,8 +107,11 @@ const scheduleAutoCompleteTasks = () => {
   cron.schedule('* * * * *', async () => { // Runs every minute
     try {
       const now = new Date();
+
+      // ⚠ Skip tasks with dailyReminder = true
       const tasksToComplete = await Task.find({
         completed: false,
+        dailyReminder: { $ne: true }, // <-- FIX
         $or: [
           { dueDate: { $lte: now } },
           { reminderTime: { $lte: now } },

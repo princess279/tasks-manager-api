@@ -106,6 +106,9 @@ export const updateTask = async (req, res) => {
 export const deleteTask = async (req, res) => {
   try {
     const task = req.task; // from protectTaskOwnership
+    if (!task)  {   
+      return res.status(404).json({ message: 'Task not found'});
+    }
     await task.deleteOne();
     console.log(`Task deleted: ${task._id} by user: ${req.user.id}`);
     return res.status(200).json({ message: 'Task deleted successfully', task });
