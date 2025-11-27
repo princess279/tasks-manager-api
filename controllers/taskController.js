@@ -28,13 +28,6 @@ export const checkValidation = (req, res, next) => {
 
 // ------------------- CONTROLLERS -------------------
 
-({ message: 'Task created successfully', task });
-  } catch (err) {
-    console.error('Error creating task:', err.message);
-    return res.status(500).json({ message: 'Server error', error: err.message });
-  }
-};
-
 // CREATE TASK
 export const createTask = async (req, res) => {
   try {
@@ -64,7 +57,6 @@ export const createTask = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
-
 // GET ALL TASKS
 export const getTasks = async (req, res) => {
   try {
