@@ -6,15 +6,20 @@ import User from '../models/User.js';
 import sendEmail from '../utils/email.js';
 
 const isProduction = process.env.NODE_ENV === 'production';
-let isRunning = false; // Prevent overlapping executions
+let isRunning = false;
 
 // ------------------ ARCHIVE PAST TASKS ------------------
 export const archivePastTasks = async () => {
   try {
     const today = DateTime.now().startOf('day').toJSDate();
 
+    // NEW: Do NOT archive tasks with dailyReminder = true
     const result = await Task.updateMany(
-      { dueDate: { $lt: today }, status: 'pending' },
+      { 
+        dueDate: { $lt: today }, 
+        status: 'pending',
+        dailyReminder: false   // 🚀 KEY FIX
+      },
       { $set: { status: 'archived' } }
     );
 
@@ -32,6 +37,7 @@ export const reminderJob = async () => {
   }
 
   isRunning = true;
+
   try {
     console.log('Running task reminder job...');
 
@@ -110,7 +116,6 @@ export const reminderJob = async () => {
 
       const diffMinutes = Math.abs(now.diff(dailyReminderTime, 'minutes').minutes);
 
-      // Send if within ±1 minute
       if (diffMinutes <= 1) {
         await sendEmail(
           user.email,
@@ -120,6 +125,7 @@ export const reminderJob = async () => {
         console.log(`Daily reminder sent to ${user.email}`);
       }
     }
+
   } catch (err) {
     console.error('Error running reminder job:', err.message);
   } finally {
@@ -129,7 +135,6 @@ export const reminderJob = async () => {
 
 // ------------------ CRON SCHEDULER ------------------
 export const scheduleReminderJob = () => {
-  // Run every minute in both dev and production to ensure reminders are sent
   const schedule = '* * * * *';
 
   try {

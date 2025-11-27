@@ -42,6 +42,10 @@ const taskSchema = new mongoose.Schema(
       type: String, // Optional HH:mm string
       default: null,
     },
+    dailyReminder: {
+      type: Boolean,
+      default: false,
+    },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
