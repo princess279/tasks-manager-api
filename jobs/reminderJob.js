@@ -51,7 +51,7 @@ export const reminderJob = async () => {
       }
 
       const userTz = user.timezone || 'UTC';
-      const now = nowUTC.setZone(userTz);
+      const now = DateTime.now().setZone(userTz);
 
       let shouldSend = false;
 

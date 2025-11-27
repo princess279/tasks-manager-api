@@ -22,7 +22,7 @@ export const registerUser = async (req, res) => {
     console.log('--- Register User Called ---');
     console.log('Request body:', req.body);
 
-    const { name, email, password } = req.body;
+    const { name, email, password, timezone } = req.body;
 
     if (!name || !email || !password) {
       console.log('Missing fields:', { name, email, password });
@@ -34,22 +34,25 @@ export const registerUser = async (req, res) => {
 
     // Check if user already exists
     const existingUser = await User.findOne({ email: emailLower });
-    console.log('Existing user found:', existingUser);
-
     if (existingUser) {
       console.log('User already exists with this email');
       return res.status(400).json({ message: 'User already exists with this email' });
     }
 
+    // Validate timezone (optional, default to UTC)
+    const validTimezones = Intl.supportedValuesOf('timeZone');
+    const userTimezone = validTimezones.includes(timezone) ? timezone : 'UTC';
+    console.log('User timezone:', userTimezone);
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    console.log('Hashed password:', hashedPassword);
 
     // Create user
     const user = await User.create({
       name,
       email: emailLower,
       password: hashedPassword,
+      timezone: userTimezone,
     });
     console.log('User saved in DB:', user);
 
@@ -57,7 +60,7 @@ export const registerUser = async (req, res) => {
     console.log('Generated JWT token:', token);
 
     return res.status(201).json({
-      user: { id: user._id, name: user.name, email: user.email },
+      user: { id: user._id, name: user.name, email: user.email, timezone: user.timezone },
       token,
     });
   } catch (err) {
@@ -80,29 +83,26 @@ export const loginUser = async (req, res) => {
     }
 
     const emailLower = email.toLowerCase();
-    console.log('Lowercased email:', emailLower);
-
     const user = await User.findOne({ email: emailLower });
-    console.log('User fetched from DB:', user);
-
-    if (!user) {
-      console.log('No user found with this email');
-      return res.status(400).json({ message: 'Invalid email or password' });
-    }
+    if (!user) return res.status(400).json({ message: 'Invalid email or password' });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log('Password match result:', isMatch);
+    if (!isMatch) return res.status(400).json({ message: 'Invalid email or password' });
 
-    if (!isMatch) {
-      console.log('Password does not match');
-      return res.status(400).json({ message: 'Invalid email or password' });
+    // Check if timezone is set
+    if (!user.timezone) {
+      console.log('User timezone not set');
+      return res.status(200).json({
+        message: 'Timezone not set',
+        redirectTo: '/set-timezone',
+        userId: user._id,
+      });
     }
 
     const token = generateToken(user._id);
-    console.log('Generated JWT token:', token);
 
     return res.status(200).json({
-      user: { id: user._id, name: user.name, email: user.email },
+      user: { id: user._id, name: user.name, email: user.email, timezone: user.timezone },
       token,
     });
   } catch (err) {

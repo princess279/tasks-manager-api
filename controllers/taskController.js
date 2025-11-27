@@ -32,8 +32,13 @@ export const checkValidation = (req, res, next) => {
 export const createTask = async (req, res) => {
   try {
     const { title, description, dueDate, priority, reminderTime, dailyReminder } = req.body;
-
     const user = req.user; // logged-in user
+
+    // Ensure valid timezone
+    const validTimezones = Intl.supportedValuesOf('timeZone');
+    const userTimezone = validTimezones.includes(user.timezone) ? user.timezone : 'UTC';
+
+    // Determine final reminder for this task
     const finalReminderTime = reminderTime || (dailyReminder ? user.reminderTime : null);
     const isDailyReminder = dailyReminder ?? user.dailyReminder ?? false;
 
@@ -44,12 +49,13 @@ export const createTask = async (req, res) => {
       priority,
       reminderTime: finalReminderTime,
       dailyReminder: isDailyReminder,
-      user: req.user.id,
+      user: user.id,
       status: 'pending',
       reminderSent: false, // ensures email can be sent
+      timezone: userTimezone, // store the timezone with the task
     });
 
-    console.log(`Task created: ${task._id} by user: ${req.user.id}`);
+    console.log(`Task created: ${task._id} by user: ${user.id}`);
     return res.status(201).json({ message: 'Task created successfully', task });
   } catch (err) {
     console.error('Error creating task:', err.message);
@@ -98,6 +104,10 @@ export const updateTask = async (req, res) => {
     }
 
     if (dailyReminder !== undefined) task.dailyReminder = dailyReminder;
+
+    // Retain timezone safely from logged-in user
+    const validTimezones = Intl.supportedValuesOf('timeZone');
+    task.timezone = validTimezones.includes(req.user.timezone) ? req.user.timezone : 'UTC';
 
     await task.save();
     console.log(`Task updated: ${task._id} by user: ${req.user.id}`);
