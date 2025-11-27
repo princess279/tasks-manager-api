@@ -17,7 +17,7 @@ export const archivePastTasks = async () => {
       { 
         dueDate: { $lt: today }, 
         status: 'pending',
-        dailyReminder: { $ne: true }
+        dailyReminder: { $ne: true } 
       },
       { $set: { status: 'archived' } }
     );
@@ -53,6 +53,13 @@ export const reminderJob = async () => {
 
       const userTz = user.timezone || 'UTC';
       const now = nowUTC.setZone(userTz);
+      const due = DateTime.fromJSDate(task.dueDate).setZone(userTz);
+
+      // Skip tasks not due today (unless dailyReminder)
+      if (!task.dailyReminder && !due.hasSame(now, 'day')) {
+        console.log(`Skipping task "${task.title}": Not due today`);
+        continue;
+      }
 
       let shouldSend = false;
 
@@ -61,6 +68,7 @@ export const reminderJob = async () => {
           const [h, m] = task.reminderTime.split(':');
           const taskReminderTime = now.set({ hour: Number(h), minute: Number(m), second: 0, millisecond: 0 });
           const diffMinutes = Math.abs(now.diff(taskReminderTime, 'minutes').minutes);
+
           if (diffMinutes <= 5) shouldSend = true;
         } else {
           // Default 8 AM reminder
@@ -77,7 +85,7 @@ export const reminderJob = async () => {
 
         task.reminderSent = true;
         await task.save();
-        console.log(`Task reminder sent for ${task.title}`);
+        console.log(`Task reminder sent for "${task.title}"`);
       }
     }
 
@@ -92,13 +100,15 @@ export const reminderJob = async () => {
       const dailyReminderTime = now.set({ hour: Number(h), minute: Number(m), second: 0, millisecond: 0 });
       const diffMinutes = Math.abs(now.diff(dailyReminderTime, 'minutes').minutes);
 
-      if (diffMinutes <= 5) { // ±5 minutes window
+      if (diffMinutes <= 5) {
         await sendEmail(
           user.email,
           'Daily Reminder',
           `Hi ${user.name || 'there'},<br>This is your daily reminder from Task Manager.<br>— Task Manager`
         );
         console.log(`Daily reminder sent to ${user.email}`);
+      } else {
+        console.log(`Skipping daily reminder for ${user.email}, not time yet`);
       }
     }
 
